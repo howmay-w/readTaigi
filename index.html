@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>音檔連結整理</title>
+<title>04 文章1 音檔</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -26,7 +26,7 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding-bottom: 180px;
+    padding-bottom: 130px;
   }
   header {
     background: linear-gradient(135deg, #1d4ed8, #7c3aed);
@@ -123,33 +123,14 @@
   .play-icon { font-size: 16px; color: var(--primary); flex-shrink:0; }
   .playing .play-icon { color: var(--active-border); }
   .bottom-player {
-    position: fixed; bottom: 56px; left: 0; right: 0;
+    position: fixed; bottom: 0; left: 0; right: 0;
     background: white;
     border-top: 1.5px solid var(--border);
     padding: 10px 16px 14px;
     box-shadow: 0 -4px 20px rgba(0,0,0,.12);
     display: none;
-    z-index: 95;
   }
   .bottom-player.visible { display: block; }
-  .sec-nav {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: rgba(248,250,252,0.97);
-    backdrop-filter: blur(12px);
-    border-top: 1.5px solid var(--border);
-    padding: 8px 12px 14px;
-    display: flex; gap: 8px; z-index: 90;
-  }
-  .sec-nav-btn {
-    flex: 1; padding: 10px 0;
-    border: 1.5px solid var(--border);
-    border-radius: 10px; background: white;
-    font-size: 14px; font-weight: 700; color: var(--primary);
-    cursor: pointer; font-family: -apple-system, "Helvetica Neue", sans-serif;
-    transition: background .15s;
-  }
-  .sec-nav-btn:disabled { color: #cbd5e1; border-color: #e2e8f0; cursor: default; }
-  .sec-nav-btn:not(:disabled):active { background: var(--primary-light); }
   .player-title { font-size: 13px; color: var(--sub); margin-bottom: 8px;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
   audio { width: 100%; height: 36px; margin-bottom: 8px; }
@@ -175,7 +156,7 @@
 <body>
 
 <header>
-  <h1>音檔連結整理</h1>
+  <h1>04 文章1 音檔</h1>
   <p>共 30 章節 · 233 個音檔</p>
   <div class="now-playing-bar" id="npBar">
     <div class="np-dot"></div>
@@ -1813,41 +1794,8 @@
   </div>
 </div>
 
-<div class="sec-nav">
-  <button class="sec-nav-btn" id="prevSecBtn" onclick="prevSec()" disabled>◀ 上一條</button>
-  <button class="sec-nav-btn" id="nextSecBtn" onclick="nextSec()">下一條 ▶</button>
-</div>
-
 <script>
 let currentBtn = null;
-let currentSec = -1;
-const allCards = () => document.querySelectorAll('.section-card');
-
-function updateNavBtns() {
-  const total = allCards().length;
-  document.getElementById('prevSecBtn').disabled = currentSec <= 0;
-  document.getElementById('nextSecBtn').disabled = currentSec < 0 || currentSec >= total - 1;
-}
-
-function goToSection(idx) {
-  const cards = allCards();
-  if (idx < 0 || idx >= cards.length) return;
-  // close current
-  if (currentSec >= 0 && currentSec < cards.length) {
-    const prevCard = cards[currentSec];
-    prevCard.querySelector('.parts-container').style.display = 'none';
-    prevCard.querySelector('.arrow').classList.remove('open');
-  }
-  currentSec = idx;
-  const card = cards[idx];
-  card.querySelector('.parts-container').style.display = 'block';
-  card.querySelector('.arrow').classList.add('open');
-  setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-  updateNavBtns();
-}
-
-function prevSec() { goToSection(currentSec - 1); }
-function nextSec() { goToSection(currentSec + 1); }
 const audio = document.getElementById('mainAudio');
 const bottomPlayer = document.getElementById('bottomPlayer');
 const npBar = document.getElementById('npBar');
@@ -1926,9 +1874,6 @@ function toggleSection(titleBtn) {
   const isOpen = container.style.display !== 'none';
   container.style.display = isOpen ? 'none' : 'block';
   arrow.classList.toggle('open', !isOpen);
-  const idx = Array.from(allCards()).indexOf(card);
-  currentSec = isOpen ? -1 : idx;
-  updateNavBtns();
   if (!isOpen) {
     setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
   }
