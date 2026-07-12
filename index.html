@@ -1958,6 +1958,18 @@ function skipTrack(dir) {
   if (url) playAudio(target, url);
 }
 
+function clearSearchAfterSelect(keepCard) {
+  if (!searchInput.value.trim()) {
+    // still strip leftover marks if any
+    document.querySelectorAll('.section-card').forEach(clearMarks);
+    return;
+  }
+  searchInput.value = '';
+  searchInput.blur();
+  if (keepCard) openCard = keepCard;
+  doSearch('');
+}
+
 function playAudio(btn, url) {
   // pause same button if already playing
   if (currentBtn === btn && !audio.paused) {
@@ -1972,6 +1984,8 @@ function playAudio(btn, url) {
 
   const card = btn.closest('.section-card');
   if (card) openSection(card, false);
+  // 進入播放後離開搜尋模式：清反白、清空搜尋框，保留本章展開
+  clearSearchAfterSelect(card);
 
   currentBtn = btn;
   lastBtn = btn;
