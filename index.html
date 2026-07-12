@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>音檔連結整理</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   :root {
     --primary: #2563eb;
     --primary-light: #dbeafe;
@@ -20,40 +20,40 @@
     --gram: #d1fae5;
     --gram-text: #065f46;
   }
-  * { -webkit-tap-highlight-color: transparent; }
   body {
     font-family: -apple-system, "Helvetica Neue", sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding-bottom: 130px;
+    padding-bottom: 150px;
   }
   header {
     background: linear-gradient(135deg, #1d4ed8, #7c3aed);
     color: white;
-    padding: 18px 16px 14px;
+    padding: 16px 16px 12px;
     position: sticky; top: 0; z-index: 100;
     box-shadow: 0 2px 12px rgba(0,0,0,.2);
   }
   header h1 { font-size: 18px; font-weight: 700; }
-  header p { font-size: 13px; opacity: .8; margin-top: 2px; }
-  .now-playing-bar {
-    background: rgba(255,255,255,.15);
-    border-radius: 8px;
-    padding: 7px 12px;
-    margin-top: 10px;
-    font-size: 13px;
-    display: none;
-    align-items: center;
-    gap: 8px;
+  header p { font-size: 12px; opacity: .8; margin-top: 2px; }
+  .search-wrap { margin-top: 10px; position: relative; }
+  .search-wrap input {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 36px 10px 12px;
+    font-size: 15px;
+    outline: none;
+    color: var(--text);
   }
-  .now-playing-bar.active { display: flex; }
-  .np-dot { width:8px; height:8px; background:#4ade80; border-radius:50%;
-    animation: pulse 1s ease-in-out infinite; flex-shrink:0; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-  .np-text { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
-  .stop-btn { background:rgba(255,255,255,.25); border:none; color:white;
-    border-radius:6px; padding:5px 12px; font-size:13px; cursor:pointer; flex-shrink:0; }
+  .search-clear {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    border: none; background: transparent; color: #94a3b8;
+    font-size: 18px; width: 28px; height: 28px; cursor: pointer;
+    display: none;
+  }
+  .search-clear.show { display: block; }
+  .search-hint { font-size: 11px; opacity: .75; margin-top: 6px; }
   .main { padding: 12px; }
   .section-card {
     background: var(--card);
@@ -63,6 +63,7 @@
     box-shadow: 0 1px 4px rgba(0,0,0,.07);
     border: 1.5px solid var(--border);
   }
+  .section-card.hidden { display: none; }
   .section-title {
     width: 100%; border: none; background: none;
     padding: 13px 14px;
@@ -89,7 +90,8 @@
   .sec-parts-count { font-size:12px; color:var(--sub); }
   .arrow { font-size:22px; color:#94a3b8; transition:transform .2s; line-height:1; }
   .arrow.open { transform: rotate(90deg); }
-  .parts-container { padding: 8px 10px 10px; border-top: 1px solid var(--border); }
+  .parts-container { padding: 8px 10px 10px; border-top: 1px solid var(--border); display: none; }
+  .parts-container.open { display: block; }
   .part-btn, .title-audio-btn {
     width: 100%; display: flex; align-items: center; gap: 10px;
     padding: 10px 10px;
@@ -101,10 +103,13 @@
     transition: all .15s;
   }
   .part-btn:active, .title-audio-btn:active { background: var(--primary-light); }
-  .part-btn.playing, .title-audio-btn.playing {
+  .part-btn.hidden, .title-audio-btn.hidden { display: none; }
+  .part-btn.focused, .title-audio-btn.focused {
     background: var(--active);
     border-color: var(--active-border);
+    box-shadow: 0 0 0 2px rgba(245,158,11,.25);
   }
+  .part-btn.playing .play-icon, .title-audio-btn.playing .play-icon { color: var(--active-border); }
   .badge {
     min-width: 28px; height: 28px;
     border-radius: 7px;
@@ -121,7 +126,6 @@
   }
   .title-audio-btn .part-label { color: var(--sub); font-size:14px; }
   .play-icon { font-size: 16px; color: var(--primary); flex-shrink:0; }
-  .playing .play-icon { color: var(--active-border); }
   .bottom-player {
     position: fixed; bottom: 0; left: 0; right: 0;
     background: white;
@@ -129,10 +133,21 @@
     padding: 10px 16px 14px;
     box-shadow: 0 -4px 20px rgba(0,0,0,.12);
     display: none;
+    z-index: 110;
   }
   .bottom-player.visible { display: block; }
-  .player-title { font-size: 13px; color: var(--sub); margin-bottom: 8px;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+  .player-top {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .player-title {
+    flex: 1; font-size: 13px; color: var(--sub);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600;
+  }
+  .player-stop {
+    border: none; background: #f1f5f9; color: var(--sub);
+    border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; flex-shrink: 0;
+  }
+  .player-stop:active { background: var(--primary-light); }
   audio { width: 100%; height: 36px; margin-bottom: 8px; }
   .ctrl-row {
     display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -142,16 +157,25 @@
     background: #f1f5f9; border: none; border-radius: 10px;
     padding: 10px 0; cursor: pointer; color: var(--primary);
     font-size: 20px; line-height: 1;
-    -webkit-tap-highlight-color: transparent;
   }
   .ctrl-btn:active { background: var(--primary-light); }
   .ctrl-btn.ctrl-seek { font-size: 17px; }
-  .part-sub {
-    font-size: 11px; color: #0369a1; font-weight: 500;
+  .part-sub { font-size: 11px; color: #0369a1; font-weight: 500; }
+  .part-meaning { font-size: 11px; color: var(--sub); }
+  mark {
+    background: #fde68a;
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
   }
-  .part-meaning {
-    font-size: 11px; color: var(--sub);
+  .no-result {
+    display: none;
+    text-align: center;
+    color: var(--sub);
+    padding: 28px 12px;
+    font-size: 14px;
   }
+  .no-result.show { display: block; }
 </style>
 </head>
 <body>
@@ -159,11 +183,11 @@
 <header>
   <h1>音檔連結整理</h1>
   <p>共 30 章節 · 233 個音檔</p>
-  <div class="now-playing-bar" id="npBar">
-    <div class="np-dot"></div>
-    <span class="np-text" id="npText">播放中...</span>
-    <button class="stop-btn" onclick="stopAudio()">■ 停止</button>
+  <div class="search-wrap">
+    <input id="searchInput" type="search" placeholder="搜尋篇名、頁碼、詞條…" enterkeyhint="search" autocomplete="off">
+    <button class="search-clear" id="searchClear" type="button" aria-label="清除">×</button>
   </div>
+  <div class="search-hint">例如：天燈、66、咱人</div>
 </header>
 
 <div class="main">
@@ -179,7 +203,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-06.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">平溪放天燈</span>
@@ -239,7 +263,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-08.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">矮靈祭——苗栗縣Saisiat（賽夏）族重要的祭典</span>
@@ -284,7 +308,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-10.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">鹿港八郊</span>
@@ -334,7 +358,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-12.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">臺南縣北門鄉南鯤鯓的王爺祭</span>
@@ -384,7 +408,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-14.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">臺灣第一个現代化的糖廠——橋仔頭糖廠</span>
@@ -434,7 +458,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-16.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">茂林的Rukai族佮烏秫米祭</span>
@@ -489,7 +513,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-18.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">Truku（太魯閣）—花蓮的美景佮原住民族群</span>
@@ -524,7 +548,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-22.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">新竹風佮新竹米粉</span>
@@ -574,7 +598,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-24.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">佮竹仔無關係的竹塹餅</span>
@@ -619,7 +643,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-26.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">覆菜——苗栗的名產</span>
@@ -664,7 +688,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-28.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">新港飴按怎來</span>
@@ -729,7 +753,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-30.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">臺南的度小月擔仔麵</span>
@@ -779,7 +803,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-32.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">萬巒豬跤行遍全臺灣</span>
@@ -829,7 +853,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-34.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">臺東池上便當——深深數念的古早味</span>
@@ -874,7 +898,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-36.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">金門貢糖——予你袂假得</span>
@@ -929,7 +953,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-40.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">千算萬算，毋值天一劃</span>
@@ -989,7 +1013,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-42.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">踢銅管仔</span>
@@ -1044,7 +1068,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-44.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">遠足</span>
@@ -1119,7 +1143,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-48.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">雲林口湖牽水</span>
@@ -1169,7 +1193,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-50.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">馬偕牧師來臺灣宣教</span>
@@ -1234,7 +1258,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-52.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">馬偕牧師的醫療傳教</span>
@@ -1289,7 +1313,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-54.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">嘉南大圳之父——八田與一</span>
@@ -1339,7 +1363,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-58.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">生查埔佮生查某</span>
@@ -1399,7 +1423,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-60.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">世界一的臺灣Hinoki</span>
@@ -1444,7 +1468,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-62.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">新族群</span>
@@ -1494,7 +1518,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-64.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">魚仔話之一</span>
@@ -1554,7 +1578,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-66.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">山球</span>
@@ -1604,7 +1628,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-68.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">澎湖的大自然</span>
@@ -1659,7 +1683,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-70.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">竹仔開花</span>
@@ -1714,7 +1738,7 @@
         <span class="arrow">›</span>
       </div>
     </button>
-    <div class="parts-container" style="display:none;">
+    <div class="parts-container">
       <button class="title-audio-btn" onclick="playAudio(this, 'https://language.moe.gov.tw/upload/download/jts/04%E6%96%87%E7%AB%A01(%E9%9F%B3%E6%AA%94)/0401-72.mp3')">
         <span class="badge badge-title">標</span>
         <span class="part-label">咱的大自然環境</span>
@@ -1785,25 +1809,35 @@
   </div>
 </div>
 
+<div class="no-result" id="noResult">找不到符合的內容</div>
+
 <div class="bottom-player" id="bottomPlayer">
-  <div class="player-title" id="playerTitle">音檔</div>
+  <div class="player-top">
+    <div class="player-title" id="playerTitle">音檔</div>
+    <button class="player-stop" type="button" onclick="stopAudio()">■ 停止</button>
+  </div>
   <audio id="mainAudio" controls preload="none"></audio>
   <div class="ctrl-row">
-    <button class="ctrl-btn" onclick="skipTrack(-1)">⏮</button>
-    <button class="ctrl-btn ctrl-seek" onclick="seekBy(-3)">⟨⟨ 3s</button>
-    <button class="ctrl-btn ctrl-seek" onclick="seekBy(3)">3s ⟩⟩</button>
-    <button class="ctrl-btn" onclick="skipTrack(1)">⏭</button>
+    <button class="ctrl-btn" type="button" onclick="skipTrack(-1)">⏮</button>
+    <button class="ctrl-btn ctrl-seek" type="button" onclick="seekBy(-3)">⟨⟨ 3s</button>
+    <button class="ctrl-btn ctrl-seek" type="button" onclick="seekBy(3)">3s ⟩⟩</button>
+    <button class="ctrl-btn" type="button" onclick="skipTrack(1)">⏭</button>
   </div>
 </div>
 
 <script>
+const STORAGE_KEY = 'readTaigi:last';
 let currentBtn = null;
 let lastBtn = null;
+let openCard = null;
+let restoreTime = 0;
+
 const audio = document.getElementById('mainAudio');
 const bottomPlayer = document.getElementById('bottomPlayer');
-const npBar = document.getElementById('npBar');
-const npText = document.getElementById('npText');
 const playerTitle = document.getElementById('playerTitle');
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+const noResult = document.getElementById('noResult');
 
 function getAllBtns() {
   return Array.from(document.querySelectorAll('.title-audio-btn, .part-btn'));
@@ -1814,13 +1848,107 @@ function getUrl(btn) {
   return m ? m[1] : null;
 }
 
+function labelText(btn) {
+  const el = btn.querySelector('.part-label');
+  return el ? el.textContent.trim() : '';
+}
+
+function saveState() {
+  const btn = currentBtn || lastBtn;
+  if (!btn) return;
+  const card = btn.closest('.section-card');
+  const data = {
+    url: getUrl(btn),
+    time: audio.currentTime || 0,
+    secId: card ? card.id : '',
+    label: labelText(btn)
+  };
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
 function seekBy(sec) {
   if (!audio.src) return;
   audio.currentTime = Math.min(Math.max(0, audio.currentTime + sec), audio.duration || 0);
+  saveState();
+}
+
+function setFocus(btn, scroll) {
+  document.querySelectorAll('.focused').forEach(el => el.classList.remove('focused', 'playing'));
+  document.querySelectorAll('.play-icon').forEach(icon => { icon.textContent = '▶'; });
+  if (!btn) return;
+  btn.classList.add('focused');
+  const icon = btn.querySelector('.play-icon');
+  if (icon && !audio.paused) {
+    btn.classList.add('playing');
+    icon.textContent = '⏸';
+  } else if (icon) {
+    icon.textContent = '▶';
+  }
+  if (scroll) {
+    // center in viewport, accounting for sticky header + bottom player
+    const headerH = document.querySelector('header').offsetHeight;
+    const playerH = bottomPlayer.classList.contains('visible') ? bottomPlayer.offsetHeight : 0;
+    const rect = btn.getBoundingClientRect();
+    const viewH = window.innerHeight - headerH - playerH;
+    const targetTop = window.scrollY + rect.top - headerH - (viewH / 2) + (rect.height / 2);
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+  }
+}
+
+function openSection(card, scrollCard) {
+  if (!card) return;
+  document.querySelectorAll('.section-card').forEach(c => {
+    const parts = c.querySelector('.parts-container');
+    const arrow = c.querySelector('.arrow');
+    if (c === card) {
+      parts.classList.add('open');
+      arrow.classList.add('open');
+    } else {
+      parts.classList.remove('open');
+      arrow.classList.remove('open');
+    }
+  });
+  openCard = card;
+  if (scrollCard) {
+    setTimeout(() => {
+      const headerH = document.querySelector('header').offsetHeight;
+      const rect = card.getBoundingClientRect();
+      const top = window.scrollY + rect.top - headerH - 8;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }, 50);
+  }
+}
+
+function closeAllSections() {
+  document.querySelectorAll('.section-card').forEach(c => {
+    c.querySelector('.parts-container').classList.remove('open');
+    c.querySelector('.arrow').classList.remove('open');
+  });
+  openCard = null;
+}
+
+function toggleSection(titleBtn) {
+  const card = titleBtn.closest('.section-card');
+  const parts = card.querySelector('.parts-container');
+  const isOpen = parts.classList.contains('open');
+  if (isOpen) {
+    parts.classList.remove('open');
+    titleBtn.querySelector('.arrow').classList.remove('open');
+    if (openCard === card) openCard = null;
+  } else {
+    openSection(card, true);
+  }
 }
 
 function skipTrack(dir) {
-  const btns = getAllBtns();
+  const btns = getAllBtns().filter(b => !b.classList.contains('hidden'));
   const ref = currentBtn || lastBtn;
   const idx = ref ? btns.indexOf(ref) : -1;
   if (idx < 0) return;
@@ -1831,74 +1959,100 @@ function skipTrack(dir) {
 }
 
 function playAudio(btn, url) {
-  if (currentBtn) {
-    currentBtn.classList.remove('playing');
-    const icon = currentBtn.querySelector('.play-icon');
-    if (icon) icon.textContent = '▶';
-  }
+  // pause same button if already playing
   if (currentBtn === btn && !audio.paused) {
     audio.pause();
-    currentBtn = null;
-    bottomPlayer.classList.remove('visible');
-    npBar.classList.remove('active');
+    btn.classList.remove('playing');
+    const icon = btn.querySelector('.play-icon');
+    if (icon) icon.textContent = '▶';
+    // keep focused
+    saveState();
     return;
   }
+
+  const card = btn.closest('.section-card');
+  if (card) openSection(card, false);
+
   currentBtn = btn;
   lastBtn = btn;
-  btn.classList.add('playing');
-  const icon = btn.querySelector('.play-icon');
-  if (icon) icon.textContent = '⏸';
-
-  const label = btn.querySelector('.part-label').textContent;
-  playerTitle.textContent = label;
-  npText.textContent = label;
-  npBar.classList.add('active');
+  playerTitle.textContent = labelText(btn);
   bottomPlayer.classList.add('visible');
 
-  audio.src = url;
-  audio.load();
+  const same = audio.getAttribute('data-url') === url;
+  if (!same) {
+    audio.setAttribute('data-url', url);
+    audio.src = url;
+    audio.load();
+    if (restoreTime > 0) {
+      const t = restoreTime;
+      restoreTime = 0;
+      audio.addEventListener('loadedmetadata', function once() {
+        audio.currentTime = Math.min(t, audio.duration || t);
+        audio.removeEventListener('loadedmetadata', once);
+      });
+    }
+  }
+
+  setFocus(btn, true);
+  btn.classList.add('playing', 'focused');
+  const icon = btn.querySelector('.play-icon');
+  if (icon) icon.textContent = '⏸';
   audio.play().catch(e => console.log('Play error:', e));
+  saveState();
 }
 
-audio.addEventListener('ended', () => {
-  if (currentBtn) {
-    currentBtn.classList.remove('playing');
-    const icon = currentBtn.querySelector('.play-icon');
-    if (icon) icon.textContent = '▶';
-    lastBtn = currentBtn;
-    currentBtn = null;
+audio.addEventListener('play', () => {
+  if (currentBtn || lastBtn) {
+    const btn = currentBtn || lastBtn;
+    btn.classList.add('playing', 'focused');
+    const icon = btn.querySelector('.play-icon');
+    if (icon) icon.textContent = '⏸';
   }
-  npBar.classList.remove('active');
+});
+
+audio.addEventListener('pause', () => {
+  const btn = currentBtn || lastBtn;
+  if (btn) {
+    btn.classList.remove('playing');
+    const icon = btn.querySelector('.play-icon');
+    if (icon) icon.textContent = '▶';
+    // keep focused
+  }
+  saveState();
+});
+
+audio.addEventListener('ended', () => {
+  const btn = currentBtn || lastBtn;
+  if (btn) {
+    btn.classList.remove('playing');
+    btn.classList.add('focused');
+    const icon = btn.querySelector('.play-icon');
+    if (icon) icon.textContent = '▶';
+    lastBtn = btn;
+    currentBtn = btn; // keep for skip prev/next
+  }
+  saveState();
+  // do NOT scroll or clear focus
+});
+
+audio.addEventListener('timeupdate', () => {
+  if (Math.floor(audio.currentTime) % 2 === 0) saveState();
 });
 
 function stopAudio() {
   audio.pause();
-  if (currentBtn) {
-    currentBtn.classList.remove('playing');
-    const icon = currentBtn.querySelector('.play-icon');
+  if (audio.src) audio.currentTime = 0;
+  const btn = currentBtn || lastBtn;
+  if (btn) {
+    btn.classList.remove('playing');
+    btn.classList.add('focused');
+    const icon = btn.querySelector('.play-icon');
     if (icon) icon.textContent = '▶';
-    lastBtn = currentBtn;
-    currentBtn = null;
   }
-  npBar.classList.remove('active');
-  bottomPlayer.classList.remove('visible');
+  saveState();
 }
 
-function toggleSection(titleBtn) {
-  const card = titleBtn.closest('.section-card');
-  const container = card.querySelector('.parts-container');
-  const arrow = titleBtn.querySelector('.arrow');
-  const isOpen = container.style.display !== 'none';
-  container.style.display = isOpen ? 'none' : 'block';
-  arrow.classList.toggle('open', !isOpen);
-  if (!isOpen) {
-    setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
-  }
-}
-
-const VOCAB = {"【咱人】": {"roman": "lán-lâng", "meaning": "指農曆"}, "【跤兜】": {"roman": "kha-tau", "meaning": "左右、前後、上下"}, "【揜貼】": {"roman": "iap-thiap", "meaning": "偏僻、偏遠"}, "【聽候】": {"roman": "thìng-hāu", "meaning": "等候、等待"}, "【慣勢】": {"roman": "kuàn-sì", "meaning": "習慣、習性"}, "【誠敨】": {"roman": "tsiânn tháu", "meaning": "聲名遠播"}, "【閹雞趁鳳飛】": {"roman": "iam-ke thàn hong pue", "meaning": "不自量力地模仿別人"}, "【蹛】": {"roman": "tuà", "meaning": "居住"}, "【無偌遠】": {"roman": "bô guā hng", "meaning": "不太遠"}, "【會失禮】": {"roman": "huē sit-lé", "meaning": "道歉"}, "【秮仔米】": {"roman": "tai-á-bí", "meaning": "小米"}, "【見若】": {"roman": "kìnn-nā", "meaning": "凡是"}, "【糖籠】": {"roman": "thng-láng", "meaning": "裝糖的竹簍"}, "【搟】": {"roman": "hián", "meaning": "搖幌"}, "【來去拍】": {"roman": "lâi-khì-phah", "meaning": "一來一往"}, "【輕爽】": {"roman": "khin-sńg", "meaning": "輕盈"}, "【𥴊壺仔】": {"roman": "kám-ôo-á", "meaning": "大而淺的圓形盛物竹筐"}, "【交易】": {"roman": "ka-iah", "meaning": "生意熱絡"}, "【王爺】": {"roman": "ông-iâ", "meaning": "臺灣民間信仰之一，其出身有瘟神、厲鬼、英雄"}, "【服侍】": {"roman": "hok-sai", "meaning": "奉祀"}, "【童乩】": {"roman": "tâng-ki", "meaning": "乩童"}, "【齊行跤到】": {"roman": "tsiâu kiânn-kha-kàu", "meaning": "全員到齊"}, "【佇咧】": {"roman": "tī--leh", "meaning": "存在著"}, "【茶米】": {"roman": "tê-bí", "meaning": "茶葉"}, "【廍動】": {"roman": "phōo-tāng", "meaning": "糖廍開工生產"}, "【剉】": {"roman": "tshò", "meaning": "砍伐、採收"}, "【揜】": {"roman": "iap", "meaning": "藏"}, "【祀】": {"roman": "tshāi", "meaning": "設立神佛、祖先牌位"}, "【寢頭】": {"roman": "tshím-thâu", "meaning": "開始的時候"}, "【烏秫米】": {"roman": "oo-tsut-bí", "meaning": "黑糯米"}, "【品】": {"roman": "phín", "meaning": "約束，約定"}, "【無錢工】": {"roman": "bô-tsînn-kang", "meaning": "無償工作"}, "【偝】": {"roman": "ainn", "meaning": "背（人）"}, "【無品】": {"roman": "bô-phín", "meaning": "品行不佳"}, "【條直】": {"roman": "tiâu-tit", "meaning": "憨直、坦率"}, "【相伨】": {"roman": "sio-thīn", "meaning": "相互支持"}, "【以早】": {"roman": "í-tsá", "meaning": "早先；以前"}, "【揣】": {"roman": "tshuē", "meaning": "找"}, "【lau-lau】": {"roman": "lau-lau", "meaning": "走一走"}, "【檢采】": {"roman": "kiám-tshái", "meaning": "可能、或許"}, "【向時】": {"roman": "hiàng-sî", "meaning": "從前、昔日"}, "【做做】": {"roman": "tsò-tsò", "meaning": "做成"}, "【臨時臨曜】": {"roman": "lîm-sî-lîm-iāu", "meaning": "臨時"}, "【攢物配】": {"roman": "tshuân mih-phuè", "meaning": "準備配飯的菜餚"}, "【煠】": {"roman": "sah", "meaning": "把食物放入滾水中快煮撈出"}, "【竹塹】": {"roman": "tik-tsàm", "meaning": "新竹舊地名，「塹」有多種讀音，此處採用餅店"}, "【健】": {"roman": "kiānn", "meaning": "強健"}, "【偌爾仔】": {"roman": "guā-nī-á", "meaning": "多麼地"}, "【鹹汫】": {"roman": "kiâm-tsiánn", "meaning": "鹹淡"}, "【記持】": {"roman": "kì-tî", "meaning": "記憶"}, "【豉】": {"roman": "sīnn", "meaning": "醃製"}, "【實櫼】": {"roman": "tsat-tsinn", "meaning": "緊密"}, "【閬縫】": {"roman": "làng-phāng", "meaning": "空隙"}, "【生菇】": {"roman": "senn-koo", "meaning": "長霉菌"}, "【三層肉】": {"roman": "sam-tsân-bah", "meaning": "五花肉"}, "【等路】": {"roman": "tán-lōo", "meaning": "禮品，禮物"}, "【滒粉】": {"roman": "kō hún", "meaning": "沾粉"}, "【頭來尾去】": {"roman": "thâu-lâi-bué-khì", "meaning": "來龍去脈"}, "【轉潤落軟】": {"roman": "tńg-lūn loh-nńg", "meaning": "受潮軟化"}, "【這聲】": {"roman": "tsit-siann", "meaning": "這下子"}, "【毋甘搐搐】": {"roman": "m-kam-tiuh-tiuh", "meaning": "萬分不捨"}, "【齊勻】": {"roman": "tsiâu-ûn", "meaning": "均勻"}, "【愛顧】": {"roman": "ài-kòo", "meaning": "厚愛"}, "【交易兼利市】": {"roman": "ka-iah kiam lī-tshī", "meaning": "生意興隆"}, "【厚風颱】": {"roman": "kāu hong-thai", "meaning": "颱風多"}, "【改途】": {"roman": "kái-tôo", "meaning": "改行"}, "【定著】": {"roman": "tiānn-tioh", "meaning": "有一定的份量"}, "【拍損】": {"roman": "phah-sńg", "meaning": "浪費、蹧踏"}, "【幼秀麵】": {"roman": "iù-siù-mī", "meaning": "精緻的麵食"}, "【抐】": {"roman": "lā", "meaning": "攪拌"}, "【寬寬仔】": {"roman": "khuann-khuann-á", "meaning": "慢慢地"}, "【𩚨嗲嗲】": {"roman": "khiū-teh-teh", "meaning": "食物軟而有彈性"}, "【搵料】": {"roman": "ùn-liāu", "meaning": "沾料"}, "【脆喙】": {"roman": "tshè-tshuì", "meaning": "爽口"}, "【插插插】": {"roman": "tshah-tshah-tshah", "meaning": "擁擠的樣子"}, "【拍蜂】": {"roman": "phah-phang", "meaning": "像受攻擊的蜜蜂群集在一起"}, "【節好勢】": {"roman": "tsat hó-sè", "meaning": "控制好"}, "【粟種】": {"roman": "tshik-tsíng", "meaning": "稻種"}, "【精肉】": {"roman": "tsiann-bah", "meaning": "瘦肉"}, "【煙腸】": {"roman": "ian-tshiâng", "meaning": "香腸"}, "【糋】": {"roman": "tsìnn", "meaning": "油炸食物"}, "【袂假得】": {"roman": "bē-ké--tsit", "meaning": "假不了"}, "【摃】": {"roman": "kòng", "meaning": "敲打"}, "【硩】": {"roman": "teh", "meaning": "壓"}, "【鏨】": {"roman": "tsām", "meaning": "切塊"}, "【市草】": {"roman": "tshī-tsháu", "meaning": "市況"}, "【假包】": {"roman": "ké-pâu", "meaning": "冒牌貨、贗品"}, "【一粒一】": {"roman": "it-liap-it", "meaning": "最好的、第一流的"}, "【對同】": {"roman": "tuì-tâng", "meaning": "合適"}, "【合軀】": {"roman": "hah-su", "meaning": "合身，比喻確切"}, "【過謙】": {"roman": "kòo-khiam", "meaning": "謙卑"}, "【食著羹】": {"roman": "tsiah-tioh-kenn", "meaning": "吃到苦頭"}, "【脫箠】": {"roman": "thut-tshuê", "meaning": "出差錯"}, "【海漲】": {"roman": "hái-tiòng", "meaning": "海嘯"}, "【銅管仔】": {"roman": "tâng-kóng-á", "meaning": "馬口鐵皮罐"}, "【賴賴趖】": {"roman": "luā-luā sô", "meaning": "沒事逛來逛去"}, "【jiang-kián】": {"roman": "", "meaning": "日語，划拳"}, "【óo-nih】": {"roman": "", "meaning": "日語，鬼之意"}, "【唌】": {"roman": "siânn", "meaning": "引誘"}, "【蝹】": {"roman": "un", "meaning": "蜷曲蹲坐"}, "【hong】": {"roman": "", "meaning": "「予人」的合音"}, "【衰䆀】": {"roman": "sue-bái", "meaning": "倒楣"}, "【咻】": {"roman": "hiu", "meaning": "大聲喊叫"}, "【撆手䘼】": {"roman": "pih tshiú-ńg", "meaning": "捲起袖子"}, "【探頭】": {"roman": "thàm-thâu", "meaning": "出面"}, "【牽罟】": {"roman": "khan-koo", "meaning": "在海邊拉網捕魚"}, "【一伐】": {"roman": "tsit huah", "meaning": "一步"}, "【囡仔兄】": {"roman": "gín-á-hiann", "meaning": "稱呼陌生小孩子的說法"}, "【鹹草】": {"roman": "kiâm-tsháu", "meaning": "三角藺，早期市場用來綁青菜、魚、肉的繩子。"}, "【拍交落】": {"roman": "phah-ka-lauh", "meaning": "遺失"}, "【大海漲】": {"roman": "tuā-hái-tiòng", "meaning": "大海嘯"}, "【遮爾】": {"roman": "tsiah-nī", "meaning": "這麼……"}, "【刣豬倒羊】": {"roman": "thâi-ti-tó-iûnn", "meaning": "殺豬屠羊"}, "【竹篾仔】": {"roman": "tik-bih-á", "meaning": "薄而狹長的細竹片，可用以編製竹簍、竹籃等"}, "【踅】": {"roman": "seh", "meaning": "旋轉"}, "【司公】": {"roman": "sai-kong", "meaning": "道士"}, "【出世】": {"roman": "tshut-sì", "meaning": "出生"}, "【出業】": {"roman": "tshut-giap", "meaning": "畢業"}, "【紲落來】": {"roman": "suà--loh-lâi", "meaning": "接下來"}, "【無拍算】": {"roman": "bô-phah-sng", "meaning": "不料"}, "【欲暗仔】": {"roman": "beh-àm-á", "meaning": "黃昏"}, "【滬尾】": {"roman": "Hōo-bué", "meaning": "現新北市淡水"}, "【過往】": {"roman": "kuè-óng", "meaning": "過世"}, "【看牛囡仔】": {"roman": "khuànn-gû-gín-á", "meaning": "牧童"}, "【寒熱仔症】": {"roman": "kuânn-jiat-á-tsìng", "meaning": "瘧疾"}, "【白藥水】": {"roman": "peh-ioh-tsuí", "meaning": "奎寧水"}, "【臭跤臁】": {"roman": "tshàu-kha-liâm", "meaning": "腿膿瘡"}, "【接紲】": {"roman": "tsiap-suà", "meaning": "繼續"}, "【捌】": {"roman": "bat/pat", "meaning": "曾經"}, "【同齊】": {"roman": "tâng-tsê", "meaning": "一同、一起"}, "【粟仔】": {"roman": "tshik-á", "meaning": "稻穀"}, "【去倒了】": {"roman": "khì-tò-liáu", "meaning": "倒貼"}, "【有趁的】": {"roman": "ū-thàn--ê", "meaning": "有賺頭"}, "【煞是】": {"roman": "suah-sī", "meaning": "卻是"}, "【透濫】": {"roman": "thàu-lām", "meaning": "混雜"}, "【生湠】": {"roman": "senn-thuànn", "meaning": "繁殖"}, "【香爐耳】": {"roman": "hiunn-lôo-hīnn", "meaning": "此處指後代子孫。「做香爐耳」即為傳"}, "【捀斗】": {"roman": "phâng-táu", "meaning": "喪禮中，由長子或長孫捧著裝神主牌的木斗。"}, "【常在】": {"roman": "tshiâng-tsāi", "meaning": "經常，常常"}, "【Makau】": {"roman": "", "meaning": "泰雅語，山胡椒之意"}, "【較大面】": {"roman": "khah-tuā-bīn", "meaning": "最有可能"}, "【尻川鬥柄】": {"roman": "kha-tshng-tàu-pènn", "meaning": "屁股帶根柄，意為「好攑(hó-"}, "【時行】": {"roman": "sî-kiânn", "meaning": "流行"}, "【逐口灶】": {"roman": "tak kháu-tsàu", "meaning": "每個家庭"}, "【便若】": {"roman": "piān-nā", "meaning": "每次……"}, "【半老老】": {"roman": "puànn-ló-lāu", "meaning": "中老年人"}, "【蛤仔】": {"roman": "kap-á", "meaning": "青蛙"}, "【臭風】": {"roman": "tshàu-hong", "meaning": "腐臭味"}, "【反肚】": {"roman": "píng-tōo", "meaning": "魚翻肚"}, "【相拍雞仔】": {"roman": "sio-phah-ke-á", "meaning": "愛鬧事的人"}, "【弄濁水】": {"roman": "lāng lô-tsuí", "meaning": "把水攪濁"}, "【天狗熱】": {"roman": "thian-káu-jiat", "meaning": "登革熱"}, "【蛆】": {"roman": "tshi/tshu", "meaning": "蚊蠅的幼蟲"}, "【Tee台】": {"roman": "", "meaning": "高爾夫發球台"}, "【gu-lín】": {"roman": "", "meaning": "借自英語green的日語發音，即果嶺"}, "【putting】": {"roman": "", "meaning": "英語，推桿之意"}, "【phú-looh】": {"roman": "", "meaning": "職業的、專業的，借自英語professional"}, "【a-má-tsiah】": {"roman": "", "meaning": "業餘的，借自英語amateur之日語發音"}, "【hàn-tih】": {"roman": "", "meaning": "差點，借自英語handicap的日語發音"}, "【焦燥】": {"roman": "ta-sò", "meaning": "乾燥"}, "【不止仔】": {"roman": "put-tsí-á", "meaning": "相當、非常"}, "【四配】": {"roman": "sù-phuè", "meaning": "匹配、登對"}, "【麻黃仔】": {"roman": "muâ-hông-á", "meaning": "木麻黃"}, "【大了袂䆀】": {"roman": "tua liáu be-bái", "meaning": "生長得不錯"}, "【妝娗】": {"roman": "tsng-thann", "meaning": "裝飾"}, "【洘旱】": {"roman": "khó-huānn", "meaning": "乾旱"}, "【出脫】": {"roman": "tshut-thuat", "meaning": "出人頭地"}, "【呵咾】": {"roman": "o-ló", "meaning": "稱讚"}, "【教示】": {"roman": "kà-sī", "meaning": "教導"}, "【相】": {"roman": "sio-siāng", "meaning": "相同"}, "【大主大意】": {"roman": "tuā-tsú-tuā-ì", "meaning": "擅作主張"}, "【濫糝】": {"roman": "lām-sám", "meaning": "胡亂作為"}, "【譀】": {"roman": "hàm", "meaning": "誇張、浮泛"}, "【蝕本】": {"roman": "sih-pún", "meaning": "虧本"}, "【損蕩】": {"roman": "sńg-tng", "meaning": "破壞、蹧躂"}, "【家伙】": {"roman": "ke-hué", "meaning": "財產"}, "【翸】": {"roman": "phún", "meaning": "揮霍、亂花錢"}, "【無講】": {"roman": "bô-kóng", "meaning": "何況"}, "【食認】": {"roman": "tsiah-jīn", "meaning": "承認、負責"}, "【緊猛】": {"roman": "kín-mé", "meaning": "儘快、趕緊"}, "【袂赴市】": {"roman": "bē-hù-tshī", "meaning": "來不及"}};
-
-document.addEventListener('DOMContentLoaded', () => {
+function applyVocab() {
   document.querySelectorAll('.part-label').forEach(el => {
     const key = el.textContent.trim();
     const v = VOCAB[key];
@@ -1906,9 +2060,148 @@ document.addEventListener('DOMContentLoaded', () => {
       const roman = v.roman ? '<span class="part-sub"> ' + v.roman + '</span>' : '';
       const sep = (v.roman || v.meaning) ? '<span class="part-sub">：</span>' : '';
       const meaning = v.meaning ? '<span class="part-meaning">' + v.meaning + '</span>' : '';
+      el.dataset.base = key;
       el.innerHTML = key + roman + sep + meaning;
+    } else {
+      el.dataset.base = key;
     }
   });
+}
+
+function clearMarks(root) {
+  root.querySelectorAll('mark').forEach(m => {
+    const p = m.parentNode;
+    p.replaceChild(document.createTextNode(m.textContent), m);
+    p.normalize();
+  });
+}
+
+function highlightText(el, q) {
+  if (!q) return;
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const text = node.nodeValue;
+    const idx = text.toLowerCase().indexOf(q.toLowerCase());
+    if (idx < 0) return;
+    const frag = document.createDocumentFragment();
+    if (idx > 0) frag.appendChild(document.createTextNode(text.slice(0, idx)));
+    const mark = document.createElement('mark');
+    mark.textContent = text.slice(idx, idx + q.length);
+    frag.appendChild(mark);
+    if (idx + q.length < text.length) frag.appendChild(document.createTextNode(text.slice(idx + q.length)));
+    node.parentNode.replaceChild(frag, node);
+  });
+}
+
+function doSearch(q) {
+  q = (q || '').trim();
+  searchClear.classList.toggle('show', !!q);
+  const cards = document.querySelectorAll('.section-card');
+  let any = false;
+
+  cards.forEach(card => {
+    clearMarks(card);
+    const title = card.querySelector('.sec-text')?.textContent || '';
+    const page = card.querySelector('.sec-num')?.textContent || '';
+    const pageNum = String(parseInt(page, 10));
+    const titleHit = !q || title.includes(q) || page.includes(q) || pageNum === q || ('p' + pageNum) === q.toLowerCase() || ('p' + page) === q.toLowerCase();
+
+    let partHit = false;
+    card.querySelectorAll('.title-audio-btn, .part-btn').forEach(btn => {
+      const label = btn.querySelector('.part-label');
+      const text = label ? label.textContent : '';
+      const hit = !q || text.toLowerCase().includes(q.toLowerCase());
+      btn.classList.toggle('hidden', q ? !(hit || titleHit) : false);
+      if (hit && q) {
+        partHit = true;
+        if (label) highlightText(label, q);
+      }
+    });
+
+    const show = !q || titleHit || partHit;
+    card.classList.toggle('hidden', !show);
+    if (show) any = true;
+
+    if (q && titleHit) {
+      const t = card.querySelector('.sec-text');
+      const n = card.querySelector('.sec-num');
+      if (t) highlightText(t, q);
+      if (n && (page.includes(q) || pageNum === q)) highlightText(n, q);
+    }
+
+    // when searching title hit only, show all parts in that card
+    if (q && titleHit && !partHit) {
+      card.querySelectorAll('.title-audio-btn, .part-btn').forEach(btn => btn.classList.remove('hidden'));
+    }
+
+    // auto-open matching cards when searching
+    if (q && show) {
+      card.querySelector('.parts-container').classList.add('open');
+      card.querySelector('.arrow').classList.add('open');
+    } else if (!q) {
+      // leave accordion as-is except close non-openCard
+      if (card !== openCard) {
+        card.querySelector('.parts-container').classList.remove('open');
+        card.querySelector('.arrow').classList.remove('open');
+      }
+    }
+  });
+
+  noResult.classList.toggle('show', q && !any);
+  // move noResult into main flow visually
+}
+
+function restoreLast() {
+  const data = loadState();
+  if (!data || !data.url) return;
+  const btns = getAllBtns();
+  const btn = btns.find(b => getUrl(b) === data.url);
+  if (!btn) return;
+  const card = btn.closest('.section-card');
+  if (card) openSection(card, false);
+  lastBtn = btn;
+  currentBtn = btn;
+  playerTitle.textContent = data.label || labelText(btn);
+  bottomPlayer.classList.add('visible');
+  restoreTime = data.time || 0;
+  audio.setAttribute('data-url', data.url);
+  audio.src = data.url;
+  audio.load();
+  if (restoreTime > 0) {
+    const t = restoreTime;
+    audio.addEventListener('loadedmetadata', function once() {
+      audio.currentTime = Math.min(t, audio.duration || t);
+      restoreTime = 0;
+      audio.removeEventListener('loadedmetadata', once);
+    });
+  }
+  setFocus(btn, true);
+}
+
+const VOCAB = {"【咱人】": {"roman": "lán-lâng", "meaning": "指農曆"}, "【跤兜】": {"roman": "kha-tau", "meaning": "左右、前後、上下"}, "【揜貼】": {"roman": "iap-thiap", "meaning": "偏僻、偏遠"}, "【聽候】": {"roman": "thìng-hāu", "meaning": "等候、等待"}, "【慣勢】": {"roman": "kuàn-sì", "meaning": "習慣、習性"}, "【誠敨】": {"roman": "tsiânn tháu", "meaning": "聲名遠播"}, "【閹雞趁鳳飛】": {"roman": "iam-ke thàn hong pue", "meaning": "不自量力地模仿別人"}, "【蹛】": {"roman": "tuà", "meaning": "居住"}, "【無偌遠】": {"roman": "bô guā hng", "meaning": "不太遠"}, "【會失禮】": {"roman": "huē sit-lé", "meaning": "道歉"}, "【秮仔米】": {"roman": "tai-á-bí", "meaning": "小米"}, "【見若】": {"roman": "kìnn-nā", "meaning": "凡是"}, "【糖籠】": {"roman": "thng-láng", "meaning": "裝糖的竹簍"}, "【搟】": {"roman": "hián", "meaning": "搖幌"}, "【來去拍】": {"roman": "lâi-khì-phah", "meaning": "一來一往"}, "【輕爽】": {"roman": "khin-sńg", "meaning": "輕盈"}, "【𥴊壺仔】": {"roman": "kám-ôo-á", "meaning": "大而淺的圓形盛物竹筐"}, "【交易】": {"roman": "ka-iah", "meaning": "生意熱絡"}, "【王爺】": {"roman": "ông-iâ", "meaning": "臺灣民間信仰之一，其出身有瘟神、厲鬼、英雄"}, "【服侍】": {"roman": "hok-sai", "meaning": "奉祀"}, "【童乩】": {"roman": "tâng-ki", "meaning": "乩童"}, "【齊行跤到】": {"roman": "tsiâu kiânn-kha-kàu", "meaning": "全員到齊"}, "【佇咧】": {"roman": "tī--leh", "meaning": "存在著"}, "【茶米】": {"roman": "tê-bí", "meaning": "茶葉"}, "【廍動】": {"roman": "phōo-tāng", "meaning": "糖廍開工生產"}, "【剉】": {"roman": "tshò", "meaning": "砍伐、採收"}, "【揜】": {"roman": "iap", "meaning": "藏"}, "【祀】": {"roman": "tshāi", "meaning": "設立神佛、祖先牌位"}, "【寢頭】": {"roman": "tshím-thâu", "meaning": "開始的時候"}, "【烏秫米】": {"roman": "oo-tsut-bí", "meaning": "黑糯米"}, "【品】": {"roman": "phín", "meaning": "約束，約定"}, "【無錢工】": {"roman": "bô-tsînn-kang", "meaning": "無償工作"}, "【偝】": {"roman": "ainn", "meaning": "背（人）"}, "【無品】": {"roman": "bô-phín", "meaning": "品行不佳"}, "【條直】": {"roman": "tiâu-tit", "meaning": "憨直、坦率"}, "【相伨】": {"roman": "sio-thīn", "meaning": "相互支持"}, "【以早】": {"roman": "í-tsá", "meaning": "早先；以前"}, "【揣】": {"roman": "tshuē", "meaning": "找"}, "【lau-lau】": {"roman": "lau-lau", "meaning": "走一走"}, "【檢采】": {"roman": "kiám-tshái", "meaning": "可能、或許"}, "【向時】": {"roman": "hiàng-sî", "meaning": "從前、昔日"}, "【做做】": {"roman": "tsò-tsò", "meaning": "做成"}, "【臨時臨曜】": {"roman": "lîm-sî-lîm-iāu", "meaning": "臨時"}, "【攢物配】": {"roman": "tshuân mih-phuè", "meaning": "準備配飯的菜餚"}, "【煠】": {"roman": "sah", "meaning": "把食物放入滾水中快煮撈出"}, "【竹塹】": {"roman": "tik-tsàm", "meaning": "新竹舊地名，「塹」有多種讀音，此處採用餅店"}, "【健】": {"roman": "kiānn", "meaning": "強健"}, "【偌爾仔】": {"roman": "guā-nī-á", "meaning": "多麼地"}, "【鹹汫】": {"roman": "kiâm-tsiánn", "meaning": "鹹淡"}, "【記持】": {"roman": "kì-tî", "meaning": "記憶"}, "【豉】": {"roman": "sīnn", "meaning": "醃製"}, "【實櫼】": {"roman": "tsat-tsinn", "meaning": "緊密"}, "【閬縫】": {"roman": "làng-phāng", "meaning": "空隙"}, "【生菇】": {"roman": "senn-koo", "meaning": "長霉菌"}, "【三層肉】": {"roman": "sam-tsân-bah", "meaning": "五花肉"}, "【等路】": {"roman": "tán-lōo", "meaning": "禮品，禮物"}, "【滒粉】": {"roman": "kō hún", "meaning": "沾粉"}, "【頭來尾去】": {"roman": "thâu-lâi-bué-khì", "meaning": "來龍去脈"}, "【轉潤落軟】": {"roman": "tńg-lūn loh-nńg", "meaning": "受潮軟化"}, "【這聲】": {"roman": "tsit-siann", "meaning": "這下子"}, "【毋甘搐搐】": {"roman": "m-kam-tiuh-tiuh", "meaning": "萬分不捨"}, "【齊勻】": {"roman": "tsiâu-ûn", "meaning": "均勻"}, "【愛顧】": {"roman": "ài-kòo", "meaning": "厚愛"}, "【交易兼利市】": {"roman": "ka-iah kiam lī-tshī", "meaning": "生意興隆"}, "【厚風颱】": {"roman": "kāu hong-thai", "meaning": "颱風多"}, "【改途】": {"roman": "kái-tôo", "meaning": "改行"}, "【定著】": {"roman": "tiānn-tioh", "meaning": "有一定的份量"}, "【拍損】": {"roman": "phah-sńg", "meaning": "浪費、蹧踏"}, "【幼秀麵】": {"roman": "iù-siù-mī", "meaning": "精緻的麵食"}, "【抐】": {"roman": "lā", "meaning": "攪拌"}, "【寬寬仔】": {"roman": "khuann-khuann-á", "meaning": "慢慢地"}, "【𩚨嗲嗲】": {"roman": "khiū-teh-teh", "meaning": "食物軟而有彈性"}, "【搵料】": {"roman": "ùn-liāu", "meaning": "沾料"}, "【脆喙】": {"roman": "tshè-tshuì", "meaning": "爽口"}, "【插插插】": {"roman": "tshah-tshah-tshah", "meaning": "擁擠的樣子"}, "【拍蜂】": {"roman": "phah-phang", "meaning": "像受攻擊的蜜蜂群集在一起"}, "【節好勢】": {"roman": "tsat hó-sè", "meaning": "控制好"}, "【粟種】": {"roman": "tshik-tsíng", "meaning": "稻種"}, "【精肉】": {"roman": "tsiann-bah", "meaning": "瘦肉"}, "【煙腸】": {"roman": "ian-tshiâng", "meaning": "香腸"}, "【糋】": {"roman": "tsìnn", "meaning": "油炸食物"}, "【袂假得】": {"roman": "bē-ké--tsit", "meaning": "假不了"}, "【摃】": {"roman": "kòng", "meaning": "敲打"}, "【硩】": {"roman": "teh", "meaning": "壓"}, "【鏨】": {"roman": "tsām", "meaning": "切塊"}, "【市草】": {"roman": "tshī-tsháu", "meaning": "市況"}, "【假包】": {"roman": "ké-pâu", "meaning": "冒牌貨、贗品"}, "【一粒一】": {"roman": "it-liap-it", "meaning": "最好的、第一流的"}, "【對同】": {"roman": "tuì-tâng", "meaning": "合適"}, "【合軀】": {"roman": "hah-su", "meaning": "合身，比喻確切"}, "【過謙】": {"roman": "kòo-khiam", "meaning": "謙卑"}, "【食著羹】": {"roman": "tsiah-tioh-kenn", "meaning": "吃到苦頭"}, "【脫箠】": {"roman": "thut-tshuê", "meaning": "出差錯"}, "【海漲】": {"roman": "hái-tiòng", "meaning": "海嘯"}, "【銅管仔】": {"roman": "tâng-kóng-á", "meaning": "馬口鐵皮罐"}, "【賴賴趖】": {"roman": "luā-luā sô", "meaning": "沒事逛來逛去"}, "【jiang-kián】": {"roman": "", "meaning": "日語，划拳"}, "【óo-nih】": {"roman": "", "meaning": "日語，鬼之意"}, "【唌】": {"roman": "siânn", "meaning": "引誘"}, "【蝹】": {"roman": "un", "meaning": "蜷曲蹲坐"}, "【hong】": {"roman": "", "meaning": "「予人」的合音"}, "【衰䆀】": {"roman": "sue-bái", "meaning": "倒楣"}, "【咻】": {"roman": "hiu", "meaning": "大聲喊叫"}, "【撆手䘼】": {"roman": "pih tshiú-ńg", "meaning": "捲起袖子"}, "【探頭】": {"roman": "thàm-thâu", "meaning": "出面"}, "【牽罟】": {"roman": "khan-koo", "meaning": "在海邊拉網捕魚"}, "【一伐】": {"roman": "tsit huah", "meaning": "一步"}, "【囡仔兄】": {"roman": "gín-á-hiann", "meaning": "稱呼陌生小孩子的說法"}, "【鹹草】": {"roman": "kiâm-tsháu", "meaning": "三角藺，早期市場用來綁青菜、魚、肉的繩子。"}, "【拍交落】": {"roman": "phah-ka-lauh", "meaning": "遺失"}, "【大海漲】": {"roman": "tuā-hái-tiòng", "meaning": "大海嘯"}, "【遮爾】": {"roman": "tsiah-nī", "meaning": "這麼……"}, "【刣豬倒羊】": {"roman": "thâi-ti-tó-iûnn", "meaning": "殺豬屠羊"}, "【竹篾仔】": {"roman": "tik-bih-á", "meaning": "薄而狹長的細竹片，可用以編製竹簍、竹籃等"}, "【踅】": {"roman": "seh", "meaning": "旋轉"}, "【司公】": {"roman": "sai-kong", "meaning": "道士"}, "【出世】": {"roman": "tshut-sì", "meaning": "出生"}, "【出業】": {"roman": "tshut-giap", "meaning": "畢業"}, "【紲落來】": {"roman": "suà--loh-lâi", "meaning": "接下來"}, "【無拍算】": {"roman": "bô-phah-sng", "meaning": "不料"}, "【欲暗仔】": {"roman": "beh-àm-á", "meaning": "黃昏"}, "【滬尾】": {"roman": "Hōo-bué", "meaning": "現新北市淡水"}, "【過往】": {"roman": "kuè-óng", "meaning": "過世"}, "【看牛囡仔】": {"roman": "khuànn-gû-gín-á", "meaning": "牧童"}, "【寒熱仔症】": {"roman": "kuânn-jiat-á-tsìng", "meaning": "瘧疾"}, "【白藥水】": {"roman": "peh-ioh-tsuí", "meaning": "奎寧水"}, "【臭跤臁】": {"roman": "tshàu-kha-liâm", "meaning": "腿膿瘡"}, "【接紲】": {"roman": "tsiap-suà", "meaning": "繼續"}, "【捌】": {"roman": "bat/pat", "meaning": "曾經"}, "【同齊】": {"roman": "tâng-tsê", "meaning": "一同、一起"}, "【粟仔】": {"roman": "tshik-á", "meaning": "稻穀"}, "【去倒了】": {"roman": "khì-tò-liáu", "meaning": "倒貼"}, "【有趁的】": {"roman": "ū-thàn--ê", "meaning": "有賺頭"}, "【煞是】": {"roman": "suah-sī", "meaning": "卻是"}, "【透濫】": {"roman": "thàu-lām", "meaning": "混雜"}, "【生湠】": {"roman": "senn-thuànn", "meaning": "繁殖"}, "【香爐耳】": {"roman": "hiunn-lôo-hīnn", "meaning": "此處指後代子孫。「做香爐耳」即為傳"}, "【捀斗】": {"roman": "phâng-táu", "meaning": "喪禮中，由長子或長孫捧著裝神主牌的木斗。"}, "【常在】": {"roman": "tshiâng-tsāi", "meaning": "經常，常常"}, "【Makau】": {"roman": "", "meaning": "泰雅語，山胡椒之意"}, "【較大面】": {"roman": "khah-tuā-bīn", "meaning": "最有可能"}, "【尻川鬥柄】": {"roman": "kha-tshng-tàu-pènn", "meaning": "屁股帶根柄，意為「好攑(hó-"}, "【時行】": {"roman": "sî-kiânn", "meaning": "流行"}, "【逐口灶】": {"roman": "tak kháu-tsàu", "meaning": "每個家庭"}, "【便若】": {"roman": "piān-nā", "meaning": "每次……"}, "【半老老】": {"roman": "puànn-ló-lāu", "meaning": "中老年人"}, "【蛤仔】": {"roman": "kap-á", "meaning": "青蛙"}, "【臭風】": {"roman": "tshàu-hong", "meaning": "腐臭味"}, "【反肚】": {"roman": "píng-tōo", "meaning": "魚翻肚"}, "【相拍雞仔】": {"roman": "sio-phah-ke-á", "meaning": "愛鬧事的人"}, "【弄濁水】": {"roman": "lāng lô-tsuí", "meaning": "把水攪濁"}, "【天狗熱】": {"roman": "thian-káu-jiat", "meaning": "登革熱"}, "【蛆】": {"roman": "tshi/tshu", "meaning": "蚊蠅的幼蟲"}, "【Tee台】": {"roman": "", "meaning": "高爾夫發球台"}, "【gu-lín】": {"roman": "", "meaning": "借自英語green的日語發音，即果嶺"}, "【putting】": {"roman": "", "meaning": "英語，推桿之意"}, "【phú-looh】": {"roman": "", "meaning": "職業的、專業的，借自英語professional"}, "【a-má-tsiah】": {"roman": "", "meaning": "業餘的，借自英語amateur之日語發音"}, "【hàn-tih】": {"roman": "", "meaning": "差點，借自英語handicap的日語發音"}, "【焦燥】": {"roman": "ta-sò", "meaning": "乾燥"}, "【不止仔】": {"roman": "put-tsí-á", "meaning": "相當、非常"}, "【四配】": {"roman": "sù-phuè", "meaning": "匹配、登對"}, "【麻黃仔】": {"roman": "muâ-hông-á", "meaning": "木麻黃"}, "【大了袂䆀】": {"roman": "tua liáu be-bái", "meaning": "生長得不錯"}, "【妝娗】": {"roman": "tsng-thann", "meaning": "裝飾"}, "【洘旱】": {"roman": "khó-huānn", "meaning": "乾旱"}, "【出脫】": {"roman": "tshut-thuat", "meaning": "出人頭地"}, "【呵咾】": {"roman": "o-ló", "meaning": "稱讚"}, "【教示】": {"roman": "kà-sī", "meaning": "教導"}, "【相】": {"roman": "sio-siāng", "meaning": "相同"}, "【大主大意】": {"roman": "tuā-tsú-tuā-ì", "meaning": "擅作主張"}, "【濫糝】": {"roman": "lām-sám", "meaning": "胡亂作為"}, "【譀】": {"roman": "hàm", "meaning": "誇張、浮泛"}, "【蝕本】": {"roman": "sih-pún", "meaning": "虧本"}, "【損蕩】": {"roman": "sńg-tng", "meaning": "破壞、蹧躂"}, "【家伙】": {"roman": "ke-hué", "meaning": "財產"}, "【翸】": {"roman": "phún", "meaning": "揮霍、亂花錢"}, "【無講】": {"roman": "bô-kóng", "meaning": "何況"}, "【食認】": {"roman": "tsiah-jīn", "meaning": "承認、負責"}, "【緊猛】": {"roman": "kín-mé", "meaning": "儘快、趕緊"}, "【袂赴市】": {"roman": "bē-hù-tshī", "meaning": "來不及"}};
+
+document.addEventListener('DOMContentLoaded', () => {
+  // convert inline display:none to class-based
+  document.querySelectorAll('.parts-container').forEach(el => {
+    el.style.display = '';
+    el.classList.remove('open');
+  });
+  applyVocab();
+
+  let timer = null;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => doSearch(searchInput.value), 120);
+  });
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    doSearch('');
+    searchInput.focus();
+  });
+
+  restoreLast();
 });
 </script>
 </body>
