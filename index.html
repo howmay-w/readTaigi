@@ -1798,6 +1798,7 @@
 
 <script>
 let currentBtn = null;
+let lastBtn = null;
 const audio = document.getElementById('mainAudio');
 const bottomPlayer = document.getElementById('bottomPlayer');
 const npBar = document.getElementById('npBar');
@@ -1809,7 +1810,7 @@ function getAllBtns() {
 }
 
 function getUrl(btn) {
-  const m = btn.getAttribute('onclick').match(/playAudio\(this,\s*'([^']+)'\)/);
+  const m = (btn.getAttribute('onclick') || '').match(/playAudio\(this,\s*'([^']+)'\)/);
   return m ? m[1] : null;
 }
 
@@ -1820,7 +1821,9 @@ function seekBy(sec) {
 
 function skipTrack(dir) {
   const btns = getAllBtns();
-  const idx = currentBtn ? btns.indexOf(currentBtn) : -1;
+  const ref = currentBtn || lastBtn;
+  const idx = ref ? btns.indexOf(ref) : -1;
+  if (idx < 0) return;
   const target = btns[idx + dir];
   if (!target) return;
   const url = getUrl(target);
@@ -1830,7 +1833,8 @@ function skipTrack(dir) {
 function playAudio(btn, url) {
   if (currentBtn) {
     currentBtn.classList.remove('playing');
-    currentBtn.querySelector('.play-icon').textContent = '▶';
+    const icon = currentBtn.querySelector('.play-icon');
+    if (icon) icon.textContent = '▶';
   }
   if (currentBtn === btn && !audio.paused) {
     audio.pause();
@@ -1840,8 +1844,10 @@ function playAudio(btn, url) {
     return;
   }
   currentBtn = btn;
+  lastBtn = btn;
   btn.classList.add('playing');
-  btn.querySelector('.play-icon').textContent = '⏸';
+  const icon = btn.querySelector('.play-icon');
+  if (icon) icon.textContent = '⏸';
 
   const label = btn.querySelector('.part-label').textContent;
   playerTitle.textContent = label;
@@ -1857,7 +1863,9 @@ function playAudio(btn, url) {
 audio.addEventListener('ended', () => {
   if (currentBtn) {
     currentBtn.classList.remove('playing');
-    currentBtn.querySelector('.play-icon').textContent = '▶';
+    const icon = currentBtn.querySelector('.play-icon');
+    if (icon) icon.textContent = '▶';
+    lastBtn = currentBtn;
     currentBtn = null;
   }
   npBar.classList.remove('active');
@@ -1867,7 +1875,9 @@ function stopAudio() {
   audio.pause();
   if (currentBtn) {
     currentBtn.classList.remove('playing');
-    currentBtn.querySelector('.play-icon').textContent = '▶';
+    const icon = currentBtn.querySelector('.play-icon');
+    if (icon) icon.textContent = '▶';
+    lastBtn = currentBtn;
     currentBtn = null;
   }
   npBar.classList.remove('active');
