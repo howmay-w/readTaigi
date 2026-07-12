@@ -1817,6 +1817,11 @@ function getAllBtns() {
   return Array.from(document.querySelectorAll('.title-audio-btn, .part-btn'));
 }
 
+function getUrl(btn) {
+  const m = btn.getAttribute('onclick').match(/playAudio\(this,\s*'([^']+)'\)/);
+  return m ? m[1] : null;
+}
+
 function seekBy(sec) {
   if (!audio.src) return;
   audio.currentTime = Math.min(Math.max(0, audio.currentTime + sec), audio.duration || 0);
@@ -1825,8 +1830,10 @@ function seekBy(sec) {
 function skipTrack(dir) {
   const btns = getAllBtns();
   const idx = currentBtn ? btns.indexOf(currentBtn) : -1;
-  const next = btns[idx + dir];
-  if (next) next.click();
+  const target = btns[idx + dir];
+  if (!target) return;
+  const url = getUrl(target);
+  if (url) playAudio(target, url);
 }
 
 function playAudio(btn, url) {
@@ -1866,7 +1873,10 @@ audio.addEventListener('ended', () => {
   }
   npBar.classList.remove('active');
   const next = btns[idx + 1];
-  if (next) next.click();
+  if (next) {
+    const url = getUrl(next);
+    if (url) playAudio(next, url);
+  }
 });
 
 function stopAudio() {
